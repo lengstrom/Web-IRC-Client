@@ -72,12 +72,15 @@ class chatserver:
 
 class client:
 	def __init__(self):
-		loop = 1
-		while loop == 1:
+		print '1'
+		while 1:
+			print '2'
 			rlist, wlist, xlist = select.select(listofsockets,[],[])
-			if [rlist,wlist,xlist] == [[],[],[]]:
-				print 'Iteration'
+			print '3'
+			if [rlist,wlist,xlist] != [[],[],[]]:
+				print '4'
 			else:
+				print '5'
 				for active in rlist:
 					chatbuffer += active.recv(1024)
 					data = chatbuffer.split(bytes("\n", "ascii"))
@@ -86,15 +89,17 @@ class client:
 							active.send('pong')
 						else:
 							print chatline
+
 				#write something? 
 					#still need to: 
 					#1) Clean up connect function to fit with select(), 
 					#2) Add to client class to make it do what connect() does 
 					#3) Identify which socket it comes from 
 					#4) SEnd data to each
+			
 
 if __name__ == '__main__':
 	mainclient = client()
 	sorcery = chatserver(server='irc.sorcery.net',port=6667,pw='',nick='OdinBot_',realname='odinbot',username='odinbot')
-	while 1:
-		mainclient.next()
+	#while 1:
+		#mainclient.next()
