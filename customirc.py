@@ -1,7 +1,4 @@
-#much of this code was inspired by Oyoyo, programmed by Duncan Fordyce. Thanks for teaching me the protocol for how to make a client through your code! http://code.google.com/p/oyoyo/
-#TODO: Use select()
-
-
+#do something about 
 import time
 import sys
 import socket
@@ -33,8 +30,11 @@ class chatserver:
 		self.realname = realname
 		self.socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 		self._end = 0
-	def connect(self):
+		print self.server
+		print self.port
+		print self.socket
 		self.socket.connect((self.server, self.port))
+		print self.socket
 		listofservers.append(self.socket)
 		self.socket.sendall('nick ' + self.nick + "\r\n")
 		self.socket.sendall('user ' + self.username + ' 0 * :' + self.realname  + "\r\n")
@@ -64,19 +64,19 @@ class chatserver:
 		# 	yield True
 
 	def sendmsg(self,message):
-		self.socket.send('PRIVMSG #rotmg.bots :' + message + '\r\n')
-		print 'PRIVMSG #rotmg.bot :' + message + '\r\n'
+		self.socket.sendall(message)
 
 	def disconnect(self):
 		listofsockets.remove(self.socket)
 		self.socket.close()
+
 class client:
-	__init__(self):
-		this.loop = 1
-		while this.loop == 1:
+	def __init__(self):
+		loop = 1
+		while loop == 1:
 			rlist, wlist, xlist = select.select(listofsockets,[],[])
 			if [rlist,wlist,xlist] == [[],[],[]]:
-
+				print 'Iteration'
 			else:
 				for active in rlist:
 					chatbuffer += active.recv(1024)
@@ -87,10 +87,14 @@ class client:
 						else:
 							print chatline
 				#write something? 
-					#still need to: 1) Clean up connect function to fit with select(), 2) Add to client class to make it do what connect() does 3) Identify which socket it comes from 4) SEnd data to each
+					#still need to: 
+					#1) Clean up connect function to fit with select(), 
+					#2) Add to client class to make it do what connect() does 
+					#3) Identify which socket it comes from 
+					#4) SEnd data to each
 
 if __name__ == '__main__':
+	mainclient = client()
 	sorcery = chatserver(server='irc.sorcery.net',port=6667,pw='',nick='OdinBot_',realname='odinbot',username='odinbot')
-	sorcconn = sorcery.connect()
 	while 1:
-		sorcconn.next()
+		mainclient.next()
