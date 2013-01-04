@@ -1,4 +1,11 @@
-#do something about 
+
+#write something? 
+	#still need to: 
+	#1) Clean up connect function to fit with select(), 
+	#2) Add to client class to make it do what connect() does 
+	#3) Identify which socket it comes from 
+	#4) SEnd data to each
+
 import time
 import sys
 import socket
@@ -38,30 +45,6 @@ class chatserver:
 		listofservers.append(self.socket)
 		self.socket.sendall('nick ' + self.nick + "\r\n")
 		self.socket.sendall('user ' + self.username + ' 0 * :' + self.realname  + "\r\n")
-		# time.sleep(4)
-		# self.socket.sendall('join #rotmg.bot\r\n')
-		# self.sendmsg('hi')
-		# chatbuffer = bytes()
-		# while not self._end:
-		# 	try:
-		# 		chatbuffer += self.socket.recv(1024)
-		# 	except socket.error, e:
-		# 		try:  #get the errno
-		# 			errno = e.errno
-		# 		except AttributeError:
-		# 			errno = e[0]
-		# 		if errno == 11:
-		# 			pass
-		# 		else:
-		# 			raise e
-		# 	else:
-		# 		data = chatbuffer.split(bytes("\n", "ascii"))
-		# 		chatbuffer = data.pop()
-		# 		for el in data:
-		# 			print el
-		# 			if el == 'ping':
-		# 				self.socket.send('pong')
-		# 	yield True
 
 	def sendmsg(self,message):
 		self.socket.sendall(message)
@@ -90,16 +73,8 @@ class client:
 						else:
 							print chatline
 
-				#write something? 
-					#still need to: 
-					#1) Clean up connect function to fit with select(), 
-					#2) Add to client class to make it do what connect() does 
-					#3) Identify which socket it comes from 
-					#4) SEnd data to each
-			
-
 if __name__ == '__main__':
 	mainclient = client()
 	sorcery = chatserver(server='irc.sorcery.net',port=6667,pw='',nick='OdinBot_',realname='odinbot',username='odinbot')
-	#while 1:
-		#mainclient.next()
+	while 1:
+		mainclient.next() #Do something about this functionality, unsure of what to do for it ;~;
