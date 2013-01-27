@@ -1,4 +1,3 @@
-
 #write something? 
 	#still need to: 
 	#1) Clean up connect function to fit with select(), 
@@ -77,4 +76,4 @@ if __name__ == '__main__':
 	mainclient = client()
 	sorcery = chatserver(server='irc.sorcery.net',port=6667,pw='',nick='OdinBot_',realname='odinbot',username='odinbot')
 	while 1:
-		mainclient.next() #Do something about this functionality, unsure of what to do for it ;~;
+		mainclient.next() #Do something about this functionality, unsure of what to do for it
