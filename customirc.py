@@ -25,6 +25,7 @@ class bytes(object):
 
 class chatserver:
 	def __init__(self,server,port,nick,pw,username,realname):
+		print 'initializing'
 		self.server = server
 		self.port=port
 		self.nick = nick
@@ -41,9 +42,13 @@ class chatserver:
 		print self.socket
 		self.socket.connect((self.server, self.port))
 		print self.socket
-		listofservers.append(self.socket)
+		listofsockets.append(self.socket)
 		self.socket.sendall('nick ' + self.nick + "\r\n")
+		print self.nick
+		print self.username
+		print self.username
 		self.socket.sendall('user ' + self.username + ' 0 * :' + self.realname  + "\r\n")
+		#self.socket.sendall('JOIN #ro' + "\r\n")
 
 	def sendmsg(self,message):
 		self.socket.sendall(message)
@@ -54,15 +59,11 @@ class chatserver:
 
 class client:
 	def __init__(self):
-		print '1'
+		chatbuffer = ''
 		while 1:
-			print '2'
-			rlist, wlist, xlist = select.select(listofsockets,[],[])
-			print '3'
+			rlist, wlist, xlist = select.select(listofsockets,[],[],1)
+			print listofsockets
 			if [rlist,wlist,xlist] != [[],[],[]]:
-				print '4'
-			else:
-				print '5'
 				for active in rlist:
 					chatbuffer += active.recv(1024)
 					data = chatbuffer.split(bytes("\n", "ascii"))
@@ -73,7 +74,9 @@ class client:
 							print chatline
 
 if __name__ == '__main__':
-	mainclient = client()
 	sorcery = chatserver(server='irc.sorcery.net',port=6667,pw='',nick='OdinBot_',realname='odinbot',username='odinbot')
+
+if __name__ == '__main__':
+	mainclient = client()
 	while 1:
 		mainclient.next() #Do something about this functionality, unsure of what to do for it
