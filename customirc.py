@@ -17,7 +17,7 @@ import os
 import traceback
 import select
 
-#sorcery = chatserver(server='irc.sorcery.net',port=6667,pw ='',nick='odinbot',realname='odinbot',username='odinbot')
+#sorcery = chatserver(server='irc.sorcery.net',port=6667,pw ='',nick='mptpdoma',realname='mptpdoma',username='mptpdoma')
 listofsockets = []	
 class bytes(object):
 	def __new__(self, b='', encoding='utf8'):
@@ -25,7 +25,6 @@ class bytes(object):
 
 class chatserver:
 	def __init__(self,server,port,nick,pw,username,realname):
-		print 'initializing'
 		self.server = server
 		self.port=port
 		self.nick = nick
@@ -37,18 +36,15 @@ class chatserver:
 		self.realname = realname
 		self.socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 		self._end = 0
-		print self.server
-		print self.port
-		print self.socket
 		self.socket.connect((self.server, self.port))
-		print self.socket
 		listofsockets.append(self.socket)
 		self.socket.sendall('nick ' + self.nick + "\r\n")
-		print self.nick
-		print self.username
-		print self.username
+		time.sleep(.3)
 		self.socket.sendall('user ' + self.username + ' 0 * :' + self.realname  + "\r\n")
-		#self.socket.sendall('JOIN #ro' + "\r\n")
+		time.sleep(.3)
+		self.socket.sendall('JOIN #rotmg.bot' + "\r\n")
+		time.sleep(.3)
+		self.socket.sendall('PRIVMSG #rotmg.bot: o' + "\r\n")
 
 	def sendmsg(self,message):
 		self.socket.sendall(message)
@@ -74,7 +70,7 @@ class client:
 							print chatline
 
 if __name__ == '__main__':
-	sorcery = chatserver(server='irc.sorcery.net',port=6667,pw='',nick='OdinBot_',realname='odinbot',username='odinbot')
+	sorcery = chatserver(server='irc.sorcery.net',port=6667,pw='',nick='mptpdoma',realname='mptpdoma',username='mptpdoma')
 
 if __name__ == '__main__':
 	mainclient = client()
