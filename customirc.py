@@ -17,8 +17,14 @@ import os
 import traceback
 import select
 
+<<<<<<< HEAD
 #sorcery = chatserver(server='irc.sorcery.net',port=6667,pw ='',nick='mptpdoma',realname='mptpdoma',username='mptpdoma')
 listofsockets = []	
+=======
+#sorcery = chatserver(server='irc.sorcery.net',port=6667,pw ='',nick='hurrrr',realname='hurrrr',username='hurrrr')
+listofsockets = []
+servernames = []
+>>>>>>> change customirc.py
 class bytes(object):
 	def __new__(self, b='', encoding='utf8'):
 		return str(b)
@@ -38,6 +44,10 @@ class chatserver:
 		self._end = 0
 		self.socket.connect((self.server, self.port))
 		listofsockets.append(self.socket)
+<<<<<<< HEAD
+=======
+		servernames.append([self.socket.getpeername(),self.server,self.socket])
+>>>>>>> change customirc.py
 		self.socket.sendall('nick ' + self.nick + "\r\n")
 		time.sleep(.3)
 		self.socket.sendall('user ' + self.username + ' 0 * :' + self.realname  + "\r\n")
@@ -58,9 +68,16 @@ class client:
 		chatbuffer = ''
 		while 1:
 			rlist, wlist, xlist = select.select(listofsockets,[],[],1)
+<<<<<<< HEAD
 			print listofsockets
+=======
+>>>>>>> change customirc.py
 			if [rlist,wlist,xlist] != [[],[],[]]:
 				for active in rlist:
+					ircserver = ''
+					# for ip in servernames:
+					# 	if ip[0] == active.getpeername()
+					# 		ircserver = ip[1]
 					chatbuffer += active.recv(1024)
 					data = chatbuffer.split(bytes("\n", "ascii"))
 					for chatline in data:
@@ -68,6 +85,7 @@ class client:
 							active.send('pong')
 						else:
 							print chatline
+<<<<<<< HEAD
 
 if __name__ == '__main__':
 	sorcery = chatserver(server='irc.sorcery.net',port=6667,pw='',nick='mptpdoma',realname='mptpdoma',username='mptpdoma')
@@ -76,3 +94,20 @@ if __name__ == '__main__':
 	mainclient = client()
 	while 1:
 		mainclient.next() #Do something about this functionality, unsure of what to do for it
+=======
+							#print ircsrever + '|' + chatline
+
+def clientmessage(self,themessage,servername):
+	self.messageserver = ''
+	for ip in servernames:
+		if ip[1] == servername:
+			ip[2].sendmsg(themessage)
+
+if __name__ == '__main__':
+	sorcery = chatserver(server='irc.sorcery.net',port=6667,pw='',nick='hurrrr',realname='hurrrr',username='hurrrr')
+
+if __name__ == '__main__':
+	mainclient = client()
+	while 1:
+		mainclient.next() #Do something about this functionality, unsure of what to do for it
+>>>>>>> change customirc.py
