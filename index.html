@@ -1,0 +1,195 @@
+<html>
+	<head>
+		<title>IRC Client Mockup</title>
+		<style>
+			body {
+				padding:5px;
+				margin:0;
+			}
+			
+			#treeCont {
+				position:absolute;
+				height:700px;
+				width:400px;
+			}
+
+			#serverCont {
+				position:absolute;
+				height:100%;
+				width:200px;
+				background-color:green;
+			}
+
+			#roomCont {
+				position:absolute;
+				height:100%;
+				width:200px;
+				margin-left:200px;
+				background-color:blue;
+			}
+
+			#chatboxCont {
+				background-color:red;
+				position:absolute;
+				left:400px;
+				width:900px;
+				height:700px;
+			}
+
+			#topic {
+				text-align: center;
+				border-bottom:1px solid #000;
+			}
+
+			#chatArea {
+				overflow: scroll;
+				height:657px; /*700-19*/
+			}
+
+			#sendBox {
+				width:900px;
+				height:20px;
+				z-index: 3;
+				background-color: yellow;
+			}
+
+			#expandingTextArea {
+				position:absolute;
+				width:900px;
+				margin-top:-2px;
+				outline: none;
+				border: 3px solid #394;
+				font-family: arial;
+				font-size:14px;
+				overflow: hidden;
+				background-color: #fff;
+				resize:none;
+			}
+
+			.itemBox {
+				position:relative;
+				width:200px;
+				border-bottom:#000 1px solid;
+			}
+
+			.server {}
+
+			.room {}
+
+			.user {
+				margin-left:20px;
+				width:180px;
+			}
+
+			.message {
+				padding-left:6px;
+				margin-bottom: 3px;
+			}
+
+			.serverMessage {
+				font-style: italic;
+				text-align: center;
+			}
+
+			.userMessage {
+
+			}
+
+			.sender {
+				font-weight: bold;
+			}
+		</style>
+
+	</head>
+	<body>
+		<div id = 'treeCont'>
+			<div id = 'serverCont'>
+				<div class = 'itemBox server'>Server 1</div>
+				<div class = 'itemBox server'>Server 2</div>
+				<div class = 'itemBox server'>Server 3</div>
+			</div>
+			<div id = 'roomCont'>
+				<div class='room'>
+					<div class = 'itemBox roomTitle'>Room 1</div>
+					<div class = 'itemBox user'>+zxcv</div>
+					<div class = 'itemBox user'>@amitp</div>
+				</div>
+				<div class = 'itemBox roomTitle'>Room 2</div>
+			</div>
+			<div id = 'chatboxCont'>
+				<div id = 'topic'> <!-- ISSUE: NEED TO MAKE IT EXPAND -->
+					(no chat topic is set)
+				</div>
+				<div id = 'chatArea'>
+				</div>
+				<div id = 'sendBox'>
+					<textarea rows='1' id = 'expandingTextArea'></textarea>
+				</div>
+			</div>
+		</div>
+		<script type='text/javascript' src='autoscroll.js'></script>
+		<script type='text/javascript' src='jquery.js'></script>
+		<script type='text/javascript'>
+			var userData = {
+				username:"Odin",
+				realname:"Odin",
+				nickname:"Odin",
+				servers:[
+
+				]
+			}
+
+			var activeServer;
+
+			function scrollChatbox() {
+				var elem = document.getElementById('chatArea');
+				if (elem.scrollTop > elem.scrollHeight - 30) { //only scroll if page is reasonably close to the bottom - user could be looking at prior mesages
+					elem.scrollTop = elem.scrollHeight;
+				}
+			}
+
+			function addMessage(md) {
+				switch (md.msgType) {
+					case "user":
+						$("#chatArea").append("<div class='message userMessage'><span class='sender'>" + md.nick + ":&nbsp;</span>" + escapeHTML(md.msg) + "</div>");
+						scrollChatbox();
+						break;
+
+					case "server":
+						$("#chatArea").append("<div class='message serverMessage'>" + escapeHTML(md.msg) + "</div>");
+						scrollChatbox();
+						break;
+				}
+			}
+
+			window.addEventListener("keydown", function (e) {
+				if (e.keyCode == 13) {
+					$("#chatArea").append("<div class='message userMessage'><span class='sender'>" + userData.nickname + ":&nbsp;</span>" + escapeHTML($('#expandingTextArea').val()) + "</div>");
+					$("#expandingTextArea").val('');
+					scrollChatbox();
+					e.preventDefault()
+				}
+			});
+
+			window.addEventListener("keyup", function (e) {
+				if (e.keyCode == 13) {
+					$("#expandingTextArea").val('');
+					var text = document.getElementById('expandingTextArea');
+					text.style.height = 'auto';
+					text.style.height = (text.scrollHeight + 6)+'px';
+				}
+			});
+
+			var escapeHTML = (function () {
+				'use strict';
+				var chr = {
+					'"': '&quot;', '&': '&amp;', "'": '&#39;', '/': '&#47;',  '<': '&lt;',  '>': '&gt;', " ":"&nbsp;"
+				};
+
+				return function (text) {
+					return text.replace(/[\"&'\/<>\s]/g, function (a) { return chr[a]; });
+				};
+			}());
+		</script>
+	</body>
+</html>
