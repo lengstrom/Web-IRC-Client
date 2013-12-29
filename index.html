@@ -17,7 +17,19 @@
 				position:absolute;
 				height:100%;
 				width:200px;
-				background-color:green;
+				background-color:hsl(120,50%,50%);
+			}
+
+			#login {
+				position:absolute;
+				z-index: 5;
+				top:50%;
+				left:50%;
+				width:450px;
+				padding:15px;
+				margin-left:-240px;
+				height:300px;
+				margin-top:-165px;
 			}
 
 			#roomCont {
@@ -25,11 +37,11 @@
 				height:100%;
 				width:200px;
 				margin-left:200px;
-				background-color:blue;
+				background-color:hsl(240,50%,50%);
 			}
 
 			#chatboxCont {
-				background-color:red;
+				background-color:hsl(0,50%,50%);
 				position:absolute;
 				left:400px;
 				width:900px;
@@ -42,7 +54,7 @@
 			}
 
 			#chatArea {
-				overflow: scroll;
+				overflow-y: auto;
 				height:657px; /*700-19*/
 			}
 
@@ -70,6 +82,14 @@
 				position:relative;
 				width:200px;
 				border-bottom:#000 1px solid;
+			}
+
+			.roomTitle {
+				cursor: pointer;
+			}
+
+			.roomTitle:hover {
+				background-color:hsl(60,50%,50%);
 			}
 
 			.server {}
@@ -102,19 +122,26 @@
 
 	</head>
 	<body>
+		<!-- <div id='login'>
+			Nickname: <br><input type='text' id = 'nickInput'/><br>
+			Server: <br><input type='text' id = 'serverInput'/><br>
+			Rooms (separate with commas): <br><input type='text' id = 'roomsInput'/>
+			<button onclick='connect()'></button>
+		</div> -->
 		<div id = 'treeCont'>
 			<div id = 'serverCont'>
-				<div class = 'itemBox server'>Server 1</div>
-				<div class = 'itemBox server'>Server 2</div>
-				<div class = 'itemBox server'>Server 3</div>
+				<div class = 'itemBox server'>&nbsp;</div>
 			</div>
 			<div id = 'roomCont'>
-				<div class='room'>
+				<div class = 'itemBox roomTitle'>&nbsp;</div>
+				<!-- <div class='room'>
 					<div class = 'itemBox roomTitle'>Room 1</div>
-					<div class = 'itemBox user'>+zxcv</div>
-					<div class = 'itemBox user'>@amitp</div>
+					<div id = 'room1users'>
+						<div class = 'itemBox user'>+zxcv</div>
+						<div class = 'itemBox user'>@amitp</div>
+					</div>
 				</div>
-				<div class = 'itemBox roomTitle'>Room 2</div>
+				<div class = 'itemBox roomTitle'>Room 2</div> -->
 			</div>
 			<div id = 'chatboxCont'>
 				<div id = 'topic'> <!-- ISSUE: NEED TO MAKE IT EXPAND -->
@@ -127,59 +154,12 @@
 				</div>
 			</div>
 		</div>
+		<script type='text/javascript' src='socket.io.js'></script>
 		<script type='text/javascript' src='autoscroll.js'></script>
-		<script type='text/javascript' src='jquery.js'></script>
+		<script type='text/javascript' src='jQuery.js'></script>
 		<script type='text/javascript'>
-			var userData = {
-				username:"Odin",
-				realname:"Odin",
-				nickname:"Odin",
-				servers:[
-
-				]
-			}
-
-			var activeServer;
-
-			function scrollChatbox() {
-				var elem = document.getElementById('chatArea');
-				if (elem.scrollTop > elem.scrollHeight - 30) { //only scroll if page is reasonably close to the bottom - user could be looking at prior mesages
-					elem.scrollTop = elem.scrollHeight;
-				}
-			}
-
-			function addMessage(md) {
-				switch (md.msgType) {
-					case "user":
-						$("#chatArea").append("<div class='message userMessage'><span class='sender'>" + md.nick + ":&nbsp;</span>" + escapeHTML(md.msg) + "</div>");
-						scrollChatbox();
-						break;
-
-					case "server":
-						$("#chatArea").append("<div class='message serverMessage'>" + escapeHTML(md.msg) + "</div>");
-						scrollChatbox();
-						break;
-				}
-			}
-
-			window.addEventListener("keydown", function (e) {
-				if (e.keyCode == 13) {
-					$("#chatArea").append("<div class='message userMessage'><span class='sender'>" + userData.nickname + ":&nbsp;</span>" + escapeHTML($('#expandingTextArea').val()) + "</div>");
-					$("#expandingTextArea").val('');
-					scrollChatbox();
-					e.preventDefault()
-				}
-			});
-
-			window.addEventListener("keyup", function (e) {
-				if (e.keyCode == 13) {
-					$("#expandingTextArea").val('');
-					var text = document.getElementById('expandingTextArea');
-					text.style.height = 'auto';
-					text.style.height = (text.scrollHeight + 6)+'px';
-				}
-			});
-
+			var socket = io.connect('http://localhost');
+			var clients = {};
 			var escapeHTML = (function () {
 				'use strict';
 				var chr = {
@@ -190,6 +170,348 @@
 					return text.replace(/[\"&'\/<>\s]/g, function (a) { return chr[a]; });
 				};
 			}());
+
+			function connect() {
+				socket.emit("server connect")
+			}
+
+			function scrollChatbox() {
+				var elem = document.getElementById('chatArea');
+				if (elem.scrollTop + $("#chatArea").height() > elem.scrollHeight - 50) { //only scroll if page is reasonably close to the bottom - user could be looking at prior mesages
+					elem.scrollTop = elem.scrollHeight;
+				}
+			}
+
+			window.addEventListener("keydown", function (evt) {
+				if (evt.keyCode == 13) {
+					evt.preventDefault();
+					parseMessage($("#expandingTextArea").val());
+					$("#expandingTextArea").val('');
+					scrollChatbox();
+				}
+			});
+
+			function jq(myid) {
+				return myid.replace( /(:|\.|\[|\])/g, "\\$1" );
+			}
+
+			window.addEventListener("keyup", function (evt) {
+				if (evt.keyCode == 13) {
+					evt.preventDefault();
+					$("#expandingTextArea").val('');
+					var text = document.getElementById('expandingTextArea');
+					text.style.height = 'auto';
+					text.style.height = (text.scrollHeight + 6) + 'px';
+				}
+			});
+
+			function addServer(server) {
+				$('#serverCont').append('<div class = "itemBox server" id = "' + server + '">' + server + '</div>');
+				$('#roomCont').append('<div id="' + server + '_rooms"></div>');
+			}
+
+			function addRoom(server, room) {
+				$('#' + jq(server) + "_rooms").append('<div class = "room" onclick="displayRoom(\'' + server + '\',\'' + room + '\')" id="' + server + '_' + room + '_cont"><div class = "itemBox roomTitle" id = "' + server + "_" + room + "_" +'title">' + room + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span id="' + server + '_' + room + '_unread"></span>&nbsp;<span id="' + server + '_' + room + '_hilights"></span></div><div id = "' + server + '_' + room + '_nicks"></div></div>');
+
+				var HTMLToAppend = '';
+				if (clients[server].channels[room].nicks != -1) {
+					for (var i in clients[server].channels[room].nicks) {
+						HTMLToAppend = HTMLToAppend + "<div class = 'itemBox user' id = '" + server + '_' + room + '_' + i + "'>" + clients[server].channels[room].nicks[i] + i + "</div>";
+					}
+					$('#' + jq(server + '_' + room + '_nicks')).append(HTMLToAppend);
+				}
+				// var newHeight = $('#' + jq(server + '_' + room + '_cont')).height();
+				$('#' + jq(server)).height($('#' + jq(server) + "_rooms").height());
+			}
+
+			function removePound(str) {
+				try {
+					return str.replace("#", "");
+				}
+				catch (err) {
+					console.log(err);
+					debugger;
+				}
+			}
+
+			function addUserMessage(server,from,to,message) {
+				to = removePound(to);
+
+				clients[server].channels[to].messages.push({from:clients[server].channels[to].nicks[from] + from, to:to, message:message});
+
+				clients[server].channels[to].html = clients[server].channels[to].html + "<div class='message userMessage'><span class='sender'>" + clients[server].channels[to].nicks[from] + from + ":&nbsp;</span>" + escapeHTML(message) + "</div>";
+				
+				if (clients[server].channels[to].active == 1) {
+					$('#chatArea').append("<div class='message userMessage'><span class='sender'>" + clients[server].channels[to].nicks[from] + from + ":&nbsp;</span>" + escapeHTML(message) + "</div>");
+					scrollChatbox();
+				}
+
+				clients[server].channels[to].count++;
+				// switch (md.msgType) {
+				// 	case "user":
+				// 		$("#chatArea").append("<div class='message userMessage'><span class='sender'>" + md.nick + ":&nbsp;</span>" + escapeHTML(md.msg) + "</div>");
+				// 		scrollChatbox();
+				// 		break;
+
+				// 	case "server":
+				// 		$("#chatArea").append("<div class='message serverMessage'>" + escapeHTML(md.msg) + "</div>");
+				// 		scrollChatbox();
+				// 		break;
+				// }
+			}
+
+			function textToHTML(text) {
+				var htmls = [];
+				var lines = text.split(/\n/);
+				var tmpDiv = jQuery(document.createElement('div'));
+				for (var i = 0 ; i < lines.length ; i++) {
+					htmls.push(tmpDiv.text(lines[i]).html());
+				}
+
+				return htmls.join("<br>");
+			}
+
+			function addServerMessage(server,to,message) {
+				to = removePound(to);
+				if (clients[server].channels[to] === undefined) {
+					if (clients[server].messageQueue[to]) {
+						clients[server].messageQueue[to].push({server:server,to:to,message:message});
+					}
+					else {
+						clients[server].messageQueue[to] = [];
+						clients[server].messageQueue[to].push({server:server,to:to,message:message});
+					}
+				}
+				else {
+					clients[server].channels[to].messages.push({message:message});
+					
+					clients[server].channels[to].html = clients[server].channels[to].html + "<div class='message serverMessage'>" + escapeHTML(message) + "</div>"
+					
+					if (clients[server].channels[to].active == 1) {
+						$('#chatArea').append("<div class='message serverMessage'>" + escapeHTML(message) + "</div>");
+						scrollChatbox();
+					}
+
+					clients[server].channels[to].count++;
+				}
+			}
+
+			function parseMessage(str) {
+				if (str.charAt(0) == "/") { //Go through a whole bunch of checks :(
+					
+				}
+				else {
+					command = 'say';
+					args = [str];
+					addUserMessage(activeServer,clients[activeServer].nick, activeRoom, str);
+				}
+
+				socket.emit('send message', {args:args,cmd:command,server:activeServer,to:"#" + activeRoom});
+			}
+
+			var activeServer = -1;
+			var activeRoom = -1;
+			function displayRoom(server, room) {
+				room = removePound(room);
+				var elem = document.getElementById('chatArea');
+				if (activeServer != -1) {
+					clients[activeServer].channels[activeRoom].active = 0;
+					if (elem.scrollTop + $("#chatArea").height() > elem.scrollHeight - 50) {
+						clients[activeServer].channels[activeRoom].scrollTop = elem.scrollTop;
+					}
+					else {
+						clients[activeServer].channels[activeRoom].scrollTop = 0;	
+					}
+				}
+				$('#' + jq(activeServer + '_' + activeRoom + '_cont')).css('background-color','hsl(240,50%,50%)')
+				$('#' + jq(server + '_' + room + '_cont')).css('background-color','hsl(60,50%,50%)')
+				activeServer = server;
+				activeRoom = room;
+				clients[server].channels[room].active = 1;
+				$('#chatArea').html(clients[server].channels[room].html);
+				if (clients[server].channels[room].scrollTop != 0) {
+					elem.scrollTop = clients[server].channels[room].scrollTop;
+				}
+				else {
+					elem.scrollTop = elem.scrollHeight;
+				}
+
+				var newTopic = clients[server].topics[room];
+				if (!newTopic) {
+					newTopic = "(no chat topic is set)";
+				}
+
+				$('#topic').html(newTopic);
+			}
+
+			//initialization
+			//socket.emit('server connected', {server: socketHost, clientData:clients[socketHost].opt});
+			socket.on('server connected', function(d){
+				clients[d.server] = {
+					topics: {'Console':'Console: ' + d.clientData.server},
+					messageQueue: {},
+					channels:{
+						'Console':{
+							html:"",
+							messages:[],
+							nicks:-1,
+							active:0,
+							count:0,
+							scrollTop:0
+						}
+					},
+					userName:d.clientData.userName,
+					nick:d.clientData.nick,
+					port:d.clientData.port,
+					realName:d.clientData.realName,
+					password:d.clientData.password,
+					server:d.clientData.server
+				}
+				addServer(d.server);
+				addRoom(d.server, "Console");
+				displayRoom(d.server, "Console")
+			});
+
+			// socket.emit('client error', {message, server:socketHost});
+			socket.on('client error', function(d){
+				alert(d);
+			});
+			
+			// socket.emit('channel joined', {channel:channel, nicks:nicks, server:socketHost});
+			socket.on('channel joined', function(d){
+				d.channel = removePound(d.channel);
+				clients[d.server].channels[d.channel] = {
+					html:"",
+					messages:[],
+					count:0,
+					active:0,
+					scrollTop:0,
+					nicks:d.nicks
+				}
+				addRoom(d.server,d.channel);
+				displayRoom(d.server,d.channel);
+				if (clients[d.server].messageQueue[d.channel]) {
+					for (var q = 0; q < clients[d.server].messageQueue[d.channel].length; q++) {
+						addServerMessage(clients[d.server].messageQueue[d.channel][q].server,clients[d.server].messageQueue[d.channel][q].to,clients[d.server].messageQueue[d.channel][q].message);
+					}
+					clients[d.server].messageQueue[d.channel] = [];
+				}
+			});
+			
+			// socket.emit('motd receieved', {motd, server:socketHost});
+			socket.on('motd receieved', function(d){
+				clients[d.server].channels['Console'].html = clients[d.server].channels['Console'].html + textToHTML(d.motd);
+				if (clients[d.server].channels['Console'].active == 1) {
+					$('#chatArea').append(textToHTML(d.motd));
+					scrollChatbox();
+				}
+
+			});
+			
+			// // socket.emit('joined server', {message, server:socketHost});
+			// socket.on('joined server', function(d){
+				
+			// });
+			
+			// socket.emit('topic received', {channel:channel, topic:topic, nick:nick, message:message, server:socketHost});
+			socket.on('topic received', function(d){
+				d.channel = removePound(d.channel);
+				clients[d.server].topics[d.channel] = d.topic;
+				if (clients[d.server].channels[d.channel] == 1) {
+					$("#topic").html(d.topic);
+				}
+			});
+			
+			// socket.emit('user joined', {channel:channel, nick:nick, message:message, server:socketHost});
+			//{"channel":"#doge","nick":"Odin_","message":{"prefix":"Odin_!Odin_@c804fc35.hsd1.ma.5aa6454b.net.hmsk","nick":"Odin_","user":"Odin_","host":"c804fc35.hsd1.ma.5aa6454b.net.hmsk","command":"JOIN","rawCommand":"JOIN","commandType":"normal","args":["#doge"]},"server":"sorcery.net"}
+			socket.on('user joined', function(d){
+				addServerMessage(d.server,d.channel,d.nick + " ( " + d.message.prefix + " ) joined the chat room ");
+				$('#' + jq(d.server) + "_" + removePound(d.channel) + "_nicks").append("<div class = 'itemBox user' id = '" + d.server + '_' + removePound(d.channel) + '_' + i + "'>" + clients[server].channels[room].nicks[i] + i + "</div>")
+			});
+			
+			// socket.emit('user parted', {channel:channel, nick:nick, reason:reason, message:message, server:socketHost});
+			//"channel":"#doge","nick":"Odin_","message":{"prefix":"Odin_!Odin_@c804fc35.hsd1.ma.5aa6454b.net.hmsk","nick":"Odin_","user":"Odin_","host":"c804fc35.hsd1.ma.5aa6454b.net.hmsk","command":"PART","rawCommand":"PART","commandType":"normal","args":["#doge"]},"server":"sorcery.net"}
+			socket.on('user parted', function(d){
+				var reasonMsg = (d.reason) ? ": " + d.reason : "";
+				addServerMessage(d.server,d.channel,d.nick + " ( " + d.message.prefix + " ) left the chat room" + reasonMsg);
+				$('#' + jq(d.server + "_" + removePound(d.channel) + "_" + d.nick)).remove();
+			});
+			
+			// socket.emit('user parted', {channel(s):channel, nick:nick, reason:reason, message:message, server:socketHost});
+			socket.on('user quit', function(d){
+				var reasonMsg = (d.reason) ? ": " + d.reason : "";
+				for (var j in d.channel) {
+					addServerMessage(d.server,d.channel[j],d.nick + " ( " + d.message.prefix + " ) quit" + reasonMsg);
+					$('#' + jq(d.server + "_" + removePound(d.channel[j]) + "_" + d.nick)).remove();
+				}
+			});
+			
+			// socket.emit('message', {from:from, to:to, message:message, server:socketHost});
+			socket.on('message', function(d){
+				addUserMessage(d.server,d.from,d.to,d.message);
+			});
+			
+			// socket.emit('noticed received', {nick:nick, to:to, text:text, message:message, server:socketHost});
+			socket.on('noticed received', function(d){
+				//??
+			});
+			
+			// socket.emit('ctcp notice', {from:from, to:to, text:text, type:type, message:message, server:socketHost});
+			// socket.on('ctcp notice', function(d){
+
+			// });
+			
+			// socket.emit('nick changed', {oldnick:oldnick, newnick:newnick, channels:channels, message:message, server:socketHost});
+			socket.on('nick changed', function(d){
+				for (var j in d.channel) {
+					addServerMessage(d.server,d.channel[j],d.oldnick + " is now known as " + d.newnick);
+				}
+			});
+
+			// socket.emit('person kicked', {channel:channel, nick:nick, by:by, reason:reason, message:message});
+			socket.on('person kicked', function(d){
+				var reasonMsg = (d.reason) ? ": " + d.reason : "";
+				addServerMessage(d.server,d.channel[j],d.by + " kicked " + d.nick + reasonMsg);
+			});
+
+			// socket.emit('person killed', {nick:nick, reason:reason, channels:channels, message:message});
+			socket.on('person killed', function(d) {
+				var reasonMsg = (d.reason) ? ": " + d.reason : "";
+				addServerMessage(d.server,d.channel[j],d.nick + " was killed" + reasonMsg);
+			});
+
+			// socket.emit('mode added', {channel:channel, by:by, mode:mode, argument:argument, message:message});
+			socket.on('mode added', function(d){
+				//??
+			});
+
+			// socket.emit('mode removed', {channel:channel, by:by, mode:mode, argument:argument, message:message});
+			socket.on('mode removed', function(d){
+
+			});
+			
+			// socket.emit('invited', {channel:channel, from:from, message:message, server:socketHost});
+			socket.on('invited', function(d){
+				alert(d.server + ": You were invited to join the channel " + d.channel + " by " + d.from);
+			}); 
+			
+			// socket.emit('whois complete', {info, server:socketHost});
+			socket.on('whois complete', function(d){
+				console.log("Whois complete: " + d.server);
+				console.log(d.info);
+			});
+			
+			// socket.emit('listing complete', {channel:channel, from:from, message:message, server:socketHost});
+			// socket.on('listing complete', function(d){
+
+			// });
+			
+			// socket.emit('server error', {message, server:socketHost});
+			socket.on('server error', function(d){
+				alert('Server error: ' + d.server + " says " + d.message.rawCommand);
+			});
+
+			socket.emit("server connect",{nick:"Suleiman", server:"irc.sorcery.net", channels:['#e','#doge'], port:6667, username:'dan', realname:'theman'});
 		</script>
 	</body>
 </html>
