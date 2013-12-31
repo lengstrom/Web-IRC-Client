@@ -20,6 +20,22 @@
 				background-color:hsl(120,50%,50%);
 			}
 
+			#expandTopic {
+				-webkit-touch-callout: none;
+				-webkit-user-select: none;
+				-khtml-user-select: none;
+				-moz-user-select: none;
+				-ms-user-select: none;
+				user-select: none;
+				cursor:pointer;
+			}
+			
+			#expandTopic:hover {
+				background-color:black;
+				height:17px;
+				color:hsl(0,0%,0%);
+			}
+
 			#login {
 				position:absolute;
 				z-index: 5;
@@ -50,20 +66,22 @@
 			}
 
 			#topic {
+				overflow:hidden;
 				text-align: center;
+				height:18px;
+				width:100%;
 				border-bottom:1px solid #000;
 			}
 
 			#chatArea {
 				overflow-y: auto;
-				height:657px; /*700-19*/
+				height:656px; /*700-19*/
 			}
 
 			#sendBox {
 				width:900px;
 				height:20px;
 				z-index: 3;
-				background-color: yellow;
 			}
 
 			#expandingTextArea {
@@ -77,6 +95,7 @@
 				overflow: hidden;
 				background-color: #fff;
 				resize:none;
+				bottom:0px;
 			}
 
 			.itemBox {
@@ -146,7 +165,8 @@
 			</div>
 			<div id = 'chatboxCont'>
 				<div id = 'topic'> <!-- ISSUE: NEED TO MAKE IT EXPAND -->
-					(no chat topic is set)
+					<span id='topicCont'>(no chat topic is set)</span>
+					<span id='expandTopic' onclick='toggleTopic()' style='position:absolute;right:2px;top:2px;'>&#8617;	</span>
 				</div>
 				<div id = 'chatArea'>
 				</div>
@@ -162,7 +182,7 @@
 			var socket = io.connect('http://localhost');
 			var clients = {};
 			var modesToPriveleges = {
-				"h":"#",
+				"h":"%",
 				"o":"@",
 				"v":"+",
 				"b":"&"
@@ -232,14 +252,16 @@
 				$('#' + jq(server)).height($('#' + jq(server) + "_rooms").height());
 			}
 
+			function isOverflowed(element){
+				return element.scrollHeight > element.clientHeight || element.scrollWidth > element.clientWidth;
+			}
+
+			function setServerHeight(server) {
+				$('#' + jq(server)).height($('#' + jq(server) + "_rooms").height());
+			}
+
 			function removePound(str) {
-				try {
-					return str.replace("#", "");
-				}
-				catch (err) {
-					console.log(err);
-					debugger;
-				}
+				return str.replace("#", "");
 			}
 
 			function addUserMessage(server,from,to,message) {
@@ -321,15 +343,20 @@
 				channel = removePound(channel);
 				delete clients[server].channels[channel].nicks[user];
 				$('#' + jq(server + "_" + removePound(channel) + "_" + user)).remove();
+				setServerHeight(server);
 			}
 
 			function addUser(user,server,channel) {
 				channel = removePound(channel);
+				if (clients[server].channels[channel] == undefined) {
+					debugger;
+				}
 				clients[server].channels[channel].nicks[user] = '';
 				channel = removePound(channel);
 				if ($("#" + jq(server + '_' + channel + '_' + user)).length == 0) {
 					$('#' + jq(server + "_" + channel + "_nicks")).append("<div class = 'itemBox user' id = '" + server + '_' + channel + '_' + user + "'>" + user + "</div>")
 				}
+				setServerHeight(server);
 			}
 
 			function changeNick(server,channel,oldnick,newnick) {
@@ -337,7 +364,8 @@
 				clients[server].channels[channel].nicks[newnick] = clients[server].channels[channel].nicks[oldnick];
 				delete clients[server].channels[channel].nicks[oldnick];
 				var oldhtml = $('#' + jq(server + '_' + channel + '_' + oldnick)).html();
-				$('#' + jq(server + '_' + channel + '_' + oldnick)).html(oldhtml.charAt(0) + newnick);
+				var priv = (oldhtml.charAt(0) == ('%' || '&' || '@' || '+' || '-')) ? oldhtml.charAt(0) : '';
+				$('#' + jq(server + '_' + channel + '_' + oldnick)).html(priv + newnick);
 				$('#' + jq(server + '_' + channel + '_' + oldnick)).attr('id',server + '_' + channel + '_' + newnick);
 			}
 
@@ -347,31 +375,31 @@
 					clients[server].channels[channel].nicks[user] = clients[server].channels[channel].nicks[user] + modesToPriveleges[mode.charAt(1)];
 				}
 				else {
-					clients[server].channels[channel].nicks[user] = clients[server].channels[channel].nicks[user].replace(modesToPriveleges(mode.charAt(1),''));
+					clients[server].channels[channel].nicks[user] = clients[server].channels[channel].nicks[user].replace(modesToPriveleges[mode.charAt(1)],'');
 				}
 				
 				var hPriv = '';
 				for (var p in clients[server].channels[channel].nicks[user].split('')) {
-					if (p == "@") {
-						hPriv = p;
+					if (clients[server].channels[channel].nicks[user].split('')[p] == "@") {
+						hPriv = "@";
 						break;
 					}
 
-					if (p == "%") {
-						hPriv = p;
+					if (clients[server].channels[channel].nicks[user].split('')[p] == "%") {
+						hPriv = "%";
 					}
 
-					if (p == "+" && hPriv != '%') {
-						hPriv = p;		
+					if (clients[server].channels[channel].nicks[user].split('')[p] == "+" && hPriv != '%') {
+						hPriv = "+";		
 					}
 
-					if (p == "&") {
-						hPriv = p;
+					if (clients[server].channels[channel].nicks[user].split('')[p] == "&") {
+						hPriv = "&";
 						break;
 					}
 				}
 
-				$('#' + jq(server + '_' + channel + '_' + nick)).html(hPriv + user);
+				$('#' + jq(server + '_' + channel + '_' + user)).html(hPriv + user);
 			}
 
 			var activeServer = -1;
@@ -401,12 +429,33 @@
 					elem.scrollTop = elem.scrollHeight;
 				}
 
+				setTopic(server,room);
+			}
+
+			function setTopic(server,room) {
+				$("#topic").css('height','18px');
 				var newTopic = clients[server].topics[room];
 				if (!newTopic) {
 					newTopic = "(no chat topic is set)";
 				}
+				
+				$('#topicCont').html(newTopic);
 
-				$('#topic').html(newTopic);
+				if (isOverflowed(document.getElementById('topic'))) {
+					$("#expandTopic").show();
+				}
+				else {
+					$("#expandTopic").hide();
+				}
+			}
+
+			function toggleTopic() {
+				if ($("#topic").css("height") != '18px') {
+					$("#topic").css("height",'18px');
+				}
+				else {
+					$("#topic").css("height","auto");
+				}
 			}
 
 			//initialization
@@ -499,8 +548,10 @@
 			// socket.emit('user joined', {channel:channel, nick:nick, message:message, server:socketHost});
 			//{"channel":"#doge","nick":"Odin_","message":{"prefix":"Odin_!Odin_@c804fc35.hsd1.ma.5aa6454b.net.hmsk","nick":"Odin_","user":"Odin_","host":"c804fc35.hsd1.ma.5aa6454b.net.hmsk","command":"JOIN","rawCommand":"JOIN","commandType":"normal","args":["#doge"]},"server":"sorcery.net"}
 			socket.on('user joined', function(d){
-				addServerMessage(d.server,d.channel,d.nick + " ( " + d.message.prefix + " ) joined the chat room ");
-				addUser(d.nick,d.server,d.channel);
+				if (d.nick != clients[d.server].nick) {
+					addServerMessage(d.server,d.channel,d.nick + " ( " + d.message.prefix + " ) joined the chat room ");
+					addUser(d.nick,d.server,d.channel);
+				}
 			});
 			
 			// socket.emit('user parted', {channel:channel, nick:nick, reason:reason, message:message, server:socketHost});
@@ -537,9 +588,9 @@
 			
 			// socket.emit('nick changed', {oldnick:oldnick, newnick:newnick, channels:channels, message:message, server:socketHost});
 			socket.on('nick changed', function(d){
-				for (var j in d.channel) {
-					addServerMessage(d.server,d.channel[j],d.oldnick + " is now known as " + d.newnick);
-					changeNick(d.server,d.channel[j],d.oldnick,d.newnick);
+				for (var j in d.channels) {
+					addServerMessage(d.server,d.channels[j],d.oldnick + " is now known as " + d.newnick);
+					changeNick(d.server,d.channels[j],d.oldnick,d.newnick);
 				}
 			});
 
@@ -562,9 +613,9 @@
 			// socket.emit('mode added', {channel:channel, by:by, mode:mode, argument:argument, message:message});
 			socket.on('mode added', function(d){
 				var to;
-				if (d.message.args[3] != "") {
-					to = d.message.args[3];
-					modifyUser(d.mode, d.server, d.channel, to);
+				if (d.message.args[2] != "") {
+					to = d.message.args[2];
+					modifyUser(d.message.args[1], d.server, d.channel, to);
 				}
 				else {
 					to = d.channel;
@@ -576,9 +627,9 @@
 			// socket.emit('mode removed', {channel:channel, by:by, mode:mode, argument:argument, message:message});
 			socket.on('mode removed', function(d){
 				var to;
-				if (d.message.args[3] != "") {
-					to = d.message.args[3];
-					modifyUser(d.mode, d.server, d.channel, to);
+				if (d.message.args[2] != "") {
+					to = d.message.args[2];
+					modifyUser(d.message.args[1], d.server, d.channel, to);
 				}
 				else {
 					to = d.channel;

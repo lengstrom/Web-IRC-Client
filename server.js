@@ -20,11 +20,6 @@ function handler (req, res) {
 	});
 }
 
-// io.configure(function() {
-// 	// Restrict log output
-// 	io.set("log level", 2);
-// });
-
 io.sockets.on('connection', function (socket) {
 	var clients = {};
 	//socket.emit('send message', {args:args,cmd:command,server:activeServer,to:activeRoom});
