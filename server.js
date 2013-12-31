@@ -98,19 +98,19 @@ io.sockets.on('connection', function (socket) {
 			});
 ///
 			clients[socketHost].addListener('kick', function (channel, nick, by, reason, message) {
-				socket.emit('person kicked', {channel:channel, nick:nick, by:by, reason:reason, message:message});
+				socket.emit('person kicked', {channel:channel, nick:nick, by:by, reason:reason, message:message, server:socketHost});
 			});
 
 			clients[socketHost].addListener('kill', function (nick, reason, channels, message) {
-				socket.emit('person killed', {nick:nick, reason:reason, channels:channels, message:message});
+				socket.emit('person killed', {nick:nick, reason:reason, channels:channels, message:message, server:socketHost});
 			});
 
 			clients[socketHost].addListener('+mode', function (channel, by, mode, argument, message) {
-				socket.emit('mode added', {channel:channel, by:by, mode:mode, argument:argument, message:message});
+				socket.emit('mode added', {channel:channel, by:by, mode:mode, argument:argument, message:message, server:socketHost});
 			});
 
 			clients[socketHost].addListener('-mode', function (channel, by, mode, argument, message) {
-				socket.emit('mode removed', {channel:channel, by:by, mode:mode, argument:argument, message:message});
+				socket.emit('mode removed', {channel:channel, by:by, mode:mode, argument:argument, message:message, server:socketHost});
 			});
 ///
 			clients[socketHost].addListener('invite', function (channel, from, message) {
