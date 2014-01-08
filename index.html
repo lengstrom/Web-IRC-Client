@@ -238,7 +238,21 @@
 				$('#roomCont').append('<div id="' + server + '_rooms"></div>');
 			}
 
-			function addRoom(server, room) {
+			function addRoomData(server, channel, nicks) {
+				channel = removePound(channel);
+				clients[server].channels[channel] = {
+					html:"",
+					messages:[],
+					count:0,
+					active:0,
+					scrollTop:0,
+					nicks:nicks
+				}
+			}
+
+			function addRoomHTML(server, room) {
+				room = removePound(room);
+				
 				$('#' + jq(server) + "_rooms").append('<div class = "room" onclick="displayRoom(\'' + server + '\',\'' + room + '\')" id="' + server + '_' + room + '_cont"><div class = "itemBox roomTitle" id = "' + server + "_" + room + "_" +'title">' + room + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span id="' + server + '_' + room + '_unread"></span>&nbsp;<span id="' + server + '_' + room + '_hilights"></span></div><div id = "' + server + '_' + room + '_nicks"></div></div>');
 
 				var HTMLToAppend = '';
@@ -261,13 +275,13 @@
 			}
 
 			function removePound(str) {
-				return str.replace("#", "");
+				return str.replace('#', "");
 			}
 
-			function addUserMessage(server,from,to,message) {
+			function addChannelMessage(server,from,to,message) {
 				to = removePound(to);
 
-				clients[server].channels[to].messages.push({from:clients[server].channels[to].nicks[from] + from, to:to, message:message});
+				// clients[server].channels[to].messages.push({from:clients[server].channels[to].nicks[from] + from, to:to, message:message});
 
 				clients[server].channels[to].html = clients[server].channels[to].html + "<div class='message userMessage'><span class='sender'>" + clients[server].channels[to].nicks[from] + from + ":&nbsp;</span>" + escapeHTML(message) + "</div>";
 				
@@ -277,17 +291,16 @@
 				}
 
 				clients[server].channels[to].count++;
-				// switch (md.msgType) {
-				// 	case "user":
-				// 		$("#chatArea").append("<div class='message userMessage'><span class='sender'>" + md.nick + ":&nbsp;</span>" + escapeHTML(md.msg) + "</div>");
-				// 		scrollChatbox();
-				// 		break;
+			}
 
-				// 	case "server":
-				// 		$("#chatArea").append("<div class='message serverMessage'>" + escapeHTML(md.msg) + "</div>");
-				// 		scrollChatbox();
-				// 		break;
-				// }
+			function addUserMessage(server,from,to,message) {
+				if (clients[server].channels[from]) {
+
+				}
+				else {
+					addRoomData(server, from, -1);
+					addRoomHTML(d.server, from);
+				}
 			}
 
 			function textToHTML(text) {
@@ -333,7 +346,7 @@
 				else {
 					command = 'say';
 					args = [str];
-					addUserMessage(activeServer,clients[activeServer].nick, activeRoom, str);
+					addChannelMessage(activeServer,clients[activeServer].nick, activeRoom, str);
 				}
 
 				socket.emit('send message', {args:args,cmd:command,server:activeServer,to:"#" + activeRoom});
@@ -344,13 +357,13 @@
 				delete clients[server].channels[channel].nicks[user];
 				$('#' + jq(server + "_" + removePound(channel) + "_" + user)).remove();
 				setServerHeight(server);
+				if (clients[server].channels[' ' + user]) {
+					//HERE
+				}
 			}
 
 			function addUser(user,server,channel) {
 				channel = removePound(channel);
-				if (clients[server].channels[channel] == undefined) {
-					debugger;
-				}
 				clients[server].channels[channel].nicks[user] = '';
 				channel = removePound(channel);
 				if ($("#" + jq(server + '_' + channel + '_' + user)).length == 0) {
@@ -416,6 +429,7 @@
 						clients[activeServer].channels[activeRoom].scrollTop = 0;	
 					}
 				}
+
 				$('#' + jq(activeServer + '_' + activeRoom + '_cont')).css('background-color','hsl(240,50%,50%)')
 				$('#' + jq(server + '_' + room + '_cont')).css('background-color','hsl(60,50%,50%)')
 				activeServer = server;
@@ -462,9 +476,9 @@
 			//socket.emit('server connected', {server: socketHost, clientData:clients[socketHost].opt});
 			socket.on('server connected', function(d){
 				clients[d.server] = {
-					topics: {'Console':'Console: ' + d.clientData.server},
+					topics: {' Console':'Console: ' + d.clientData.server},
 					messageQueue: {},
-					channels:{
+					channels:{/*
 						'Console':{
 							html:"",
 							messages:[],
@@ -472,8 +486,9 @@
 							active:0,
 							count:0,
 							scrollTop:0
-						}
+						}*/
 					},
+					privateMessages: {},
 					userName:d.clientData.userName,
 					nick:d.clientData.nick,
 					port:d.clientData.port,
@@ -481,9 +496,10 @@
 					password:d.clientData.password,
 					server:d.clientData.server
 				}
+				addRoomData(d.server," Console",-1);
 				addServer(d.server);
-				addRoom(d.server, "Console");
-				displayRoom(d.server, "Console")
+				addRoomHTML(d.server, " Console");
+				displayRoom(d.server, " Console")
 			});
 
 			// socket.emit('client error', {message, server:socketHost});
@@ -493,16 +509,8 @@
 			
 			// socket.emit('channel joined', {channel:channel, nicks:nicks, server:socketHost});
 			socket.on('channel joined', function(d){
-				d.channel = removePound(d.channel);
-				clients[d.server].channels[d.channel] = {
-					html:"",
-					messages:[],
-					count:0,
-					active:0,
-					scrollTop:0,
-					nicks:d.nicks
-				}
-				addRoom(d.server,d.channel);
+				addRoomData(d.server,d.channel,d.nicks);
+				addRoomHTML(d.server,d.channel);
 				displayRoom(d.server,d.channel);
 				if (clients[d.server].messageQueue[d.channel]) {
 					for (var q = 0; q < clients[d.server].messageQueue[d.channel].length; q++) {
@@ -572,7 +580,12 @@
 			
 			// socket.emit('message', {from:from, to:to, message:message, server:socketHost});
 			socket.on('message', function(d){
-				addUserMessage(d.server,d.from,d.to,d.message);
+				if (d.to.charAt(0) == '#') {
+					addChannelMessage(d.server,d.from,d.to,d.message);
+				}
+				else {
+					addUserMessage(d.server,d.from,d.to,d.message);
+				}
 			});
 			
 			// socket.emit('noticed received', {nick:nick, to:to, text:text, message:message, server:socketHost});
@@ -581,9 +594,9 @@
 			});
 			
 			// socket.emit('ctcp notice', {from:from, to:to, text:text, type:type, message:message, server:socketHost});
-			// socket.on('ctcp notice', function(d){
-
-			// });
+			socket.on('ctcp notice', function(d){
+				alert(d.from + ' tried to initiate ctcp with ' + d.to + ' - this client does not support ctcp.');
+			});
 			
 			// socket.emit('nick changed', {oldnick:oldnick, newnick:newnick, channels:channels, message:message, server:socketHost});
 			socket.on('nick changed', function(d){
