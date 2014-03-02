@@ -16,7 +16,7 @@
 			#serverCont {
 				position:absolute;
 				height:100%;
-				width:200px;
+				width:125px;
 				background-color:hsl(120,50%,50%);
 			}
 
@@ -51,8 +51,8 @@
 			#roomCont {
 				position:absolute;
 				height:100%;
-				width:200px;
-				margin-left:200px;
+				width:125px;
+				margin-left:125px;
 				background-color:hsl(240,50%,50%);
 				overflow:auto;
 			}
@@ -60,9 +60,13 @@
 			#chatboxCont {
 				background-color:hsl(0,50%,50%);
 				position:absolute;
-				left:400px;
+				left:250px;
 				width:900px;
 				height:700px;
+			}
+
+			#messages {
+				
 			}
 
 			#topic {
@@ -100,7 +104,7 @@
 
 			.itemBox {
 				position:relative;
-				width:200px;
+				width:125px;
 				border-bottom:#000 1px solid;
 			}
 
@@ -591,11 +595,6 @@
 			// socket.emit('noticed received', {nick:nick, to:to, text:text, message:message, server:socketHost});
 			socket.on('noticed received', function(d){
 				//??
-			});
-			
-			// socket.emit('ctcp notice', {from:from, to:to, text:text, type:type, message:message, server:socketHost});
-			socket.on('ctcp notice', function(d){
-				alert(d.from + ' tried to initiate ctcp with ' + d.to + ' - this client does not support ctcp.');
 			});
 			
 			// socket.emit('nick changed', {oldnick:oldnick, newnick:newnick, channels:channels, message:message, server:socketHost});
